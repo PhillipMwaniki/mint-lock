@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lock Screen Explorer</title>
+<link rel="stylesheet" href="explorer.css">
+</head>
+<body>
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span>Lock Screen</span>
+    </div>
+    <nav id="nav">
+      <button data-view="all" class="active">All designs <span class="count" id="count-all"></span></button>
+      <button data-view="Styling">Styling <span class="count" id="count-Styling"></span></button>
+      <button data-view="Animation">Animation <span class="count" id="count-Animation"></span></button>
+      <button data-view="favorites">Favorites <span class="count" id="count-favorites"></span></button>
+      <hr>
+      <button data-view="settings">Settings</button>
+    </nav>
+    <div class="hook" id="hook"></div>
+  </aside>
+
+  <main class="main">
+    <header class="bar">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" placeholder="Search designs  ( / )" autocomplete="off" spellcheck="false">
+      </label>
+      <button class="ghost" id="keys-btn" title="Keyboard shortcuts (?)">?</button>
+    </header>
+    <section id="grid" class="grid"></section>
+    <section id="settings" class="settings" hidden></section>
+    <div id="empty" class="empty" hidden></div>
+  </main>
+
+  <aside class="detail" id="detail">
+    <div class="stage"><div class="scaler"><iframe id="live" title="Live preview"></iframe></div></div>
+    <div class="detail-body">
+      <div class="detail-head">
+        <h2 id="d-name"></h2>
+        <button class="star" id="d-star" title="Favorite (F)"></button>
+      </div>
+      <p id="d-desc"></p>
+      <div class="tags" id="d-tags"></div>
+      <div class="actions">
+        <button class="primary" id="use">Use this design <kbd>Enter</kbd></button>
+        <button id="full">Full screen preview <kbd>Space</kbd></button>
+        <button id="lock">Lock now <kbd>Shift+L</kbd></button>
+      </div>
+      <p class="tip">The preview is live: type in it to see how it reacts. Nothing you type here is checked or stored.</p>
+    </div>
+  </aside>
+
+  <div class="sheet" id="keys" hidden>
+    <div class="sheet-card">
+      <h3>Keyboard</h3>
+      <dl>
+        <dt>← → ↑ ↓ / H J K L</dt><dd>Move through designs</dd>
+        <dt>Enter</dt><dd>Use the selected design</dd>
+        <dt>Space</dt><dd>Full screen preview (Esc to leave, Ctrl+U plays the unlock)</dd>
+        <dt>F</dt><dd>Star / unstar</dd>
+        <dt>/</dt><dd>Search</dd>
+        <dt>Tab</dt><dd>Next section</dd>
+        <dt>Shift+L</dt><dd>Lock the screen now</dd>
+        <dt>S</dt><dd>Settings</dd>
+        <dt>Esc</dt><dd>Clear search, close this, or close the explorer</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+<script src="explorer.js"></script>
+</body>
+</html>

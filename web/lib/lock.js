@@ -21,6 +21,9 @@
   if (params.has("accent")) env.accent = params.get("accent");
   if (params.has("clock24")) env.clock24 = params.get("clock24") === "1";
   if (params.has("reduceMotion")) env.reduceMotion = params.get("reduceMotion") === "1";
+  // Embedded in the explorer: only take focus when clicked, never on our own.
+  const embedded = window.top !== window;
+  const autoFocus = mode !== "thumb" && !embedded;
   const live = mode === "lock" && !!(window.webkit && window.webkit.messageHandlers &&
                                      window.webkit.messageHandlers.mintlock);
 
@@ -196,7 +199,7 @@
       if (document.activeElement !== input && mode !== "thumb") input.focus();
     }, true);
     document.addEventListener("mousedown", () => setTimeout(() => mode !== "thumb" && input.focus(), 0));
-    if (mode !== "thumb") input.focus();
+    if (autoFocus) input.focus();
   }
 
   function clear() {

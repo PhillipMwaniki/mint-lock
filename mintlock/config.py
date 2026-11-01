@@ -27,6 +27,20 @@ DEFAULTS = {
 }
 
 
+def valid(key, value):
+    """True when value has the right type for setting key."""
+    if key not in DEFAULTS:
+        return False
+    want = DEFAULTS[key]
+    if isinstance(want, bool):
+        return isinstance(value, bool)
+    if isinstance(want, (int, float)):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if isinstance(want, list):
+        return isinstance(value, list) and all(isinstance(x, str) for x in value)
+    return isinstance(value, type(want))
+
+
 def load():
     cfg = dict(DEFAULTS)
     try:
@@ -34,16 +48,7 @@ def load():
             data = json.load(f)
         if isinstance(data, dict):
             for k, v in data.items():
-                if k not in DEFAULTS:
-                    continue
-                want = DEFAULTS[k]
-                if isinstance(want, bool):
-                    ok = isinstance(v, bool)
-                elif isinstance(want, (int, float)):
-                    ok = isinstance(v, (int, float)) and not isinstance(v, bool)
-                else:
-                    ok = isinstance(v, type(want))
-                if ok:
+                if valid(k, v):
                     cfg[k] = v
     except (OSError, ValueError):
         pass
