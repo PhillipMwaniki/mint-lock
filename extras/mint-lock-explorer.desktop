@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Lock Screen Explorer
+GenericName=Lock screen designs
+Comment=Preview and choose your lock screen design
+Exec=@BIN@ explore
+Icon=system-lock-screen
+Terminal=false
+Categories=Settings;DesktopSettings;GTK;
+Keywords=lock;screen;screensaver;login;clock;

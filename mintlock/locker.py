@@ -99,6 +99,11 @@ class MonitorWindow(Gtk.Window):
         """Plain GTK password box, for when the design cannot be rendered."""
         if self.native:
             return
+        Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", True)
+        css = Gtk.CssProvider()
+        css.load_from_data(b"window { background: #141615; color: #eeeeee; }")
+        Gtk.StyleContext.add_provider_for_screen(
+            self.get_screen(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         self.remove(self.view)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         box.set_halign(Gtk.Align.CENTER)
