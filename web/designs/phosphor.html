@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Phosphor</title>
+<script type="application/json" id="meta">
+{ "name": "Phosphor", "description": "An old CRT: glowing scanlines, a curved vignette and a faint flicker.",
+  "tags": ["retro", "mono", "animated"], "category": "Animation", "order": 23 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  :root { --ph: var(--accent); }
+  body { background: #020402; font-family: var(--mono); color: var(--ph); display: grid; place-items: center; }
+  .screen { position: fixed; inset: 0; display: grid; place-items: center; text-shadow: 0 0 6px rgba(var(--accent-rgb), .8), 0 0 22px rgba(var(--accent-rgb), .45); animation: flicker 4s infinite; }
+  @keyframes flicker { 0%, 96%, 100% { opacity: 1; } 97% { opacity: .86; } 98% { opacity: .95; } }
+  .scan { position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.35) 2px 4px); }
+  .sweep { position: fixed; left: 0; right: 0; height: 30vh; pointer-events: none;
+    background: linear-gradient(transparent, rgba(var(--accent-rgb), .05), transparent); animation: sweep 7s linear infinite; }
+  @keyframes sweep { from { top: -30vh; } to { top: 100vh; } }
+  .vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.85) 100%); }
+  .inner { text-align: center; }
+  .time { font-size: 150px; line-height: 1; letter-spacing: .06em; }
+  .date { font-size: 20px; letter-spacing: .3em; text-transform: uppercase; margin-top: 12px; opacity: .8; }
+  .field { margin-top: 70px; font-size: 22px; display: flex; justify-content: center; white-space: pre; }
+  .field input { position: absolute; opacity: 0; width: 1px; }
+  .cur { display: inline-block; width: .62em; background: var(--ph); box-shadow: 0 0 10px var(--ph); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ml-status { margin-top: 16px; color: var(--ph); font-size: 15px; letter-spacing: .1em; }
+  .ml-status[data-kind="error"] { color: #ff6a5a; text-shadow: 0 0 8px #ff6a5a; }
+  .ml-shake { animation: glitch .4s steps(2); }
+  @keyframes glitch { 25% { transform: translate(-6px, 2px) skewX(8deg); } 50% { transform: translate(5px, -2px); } 75% { transform: translate(-3px, 1px) skewX(-5deg); } }
+  html.ml-unlocking body { transition: transform .35s ease-in, opacity .35s; transform: scaleY(.005) scaleX(1.1); opacity: 0; }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="inner">
+      <div class="time" data-ml-time></div>
+      <div class="date" data-ml-date="full"></div>
+      <label class="field" data-ml-field><span>&gt; </span><span class="typed"></span><span class="cur">&nbsp;</span><input data-ml-password></label>
+      <div class="ml-status" data-ml-status></div>
+    </div>
+  </div>
+  <div class="sweep"></div><div class="scan"></div><div class="vignette"></div>
+<script>
+  const typed = document.querySelector(".typed");
+  MintLock.on("key", (k) => { if (k.kind !== "submit") typed.textContent = "*".repeat(Math.min(k.length, 24)); });
+  MintLock.on("auth", (s) => { if (s === "busy") typed.textContent = "CHECKING"; if (s === "failed") typed.textContent = ""; });
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Terminal</title>
+<script type="application/json" id="meta">
+{ "name": "Terminal", "description": "A text console login: hostname, a prompt, and a blinking block cursor.",
+  "tags": ["mono", "retro", "typing"], "category": "Styling", "order": 3 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { background: #0c0f0d; font-family: var(--mono); font-size: 17px; line-height: 1.55; color: #cfd8d2; padding: 48px 56px; }
+  .acc { color: var(--accent); }
+  .dim { color: #6c7a71; }
+  .err { color: #ff7b72; }
+  #log div { white-space: pre-wrap; }
+  .prompt { display: flex; white-space: pre; }
+  .prompt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .stars { color: #cfd8d2; }
+  .cursor { display: inline-block; width: .6em; background: var(--accent); animation: blink 1.05s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ml-busy .cursor { animation: none; opacity: .3; }
+  .ml-status { display: none; }
+  .big { position: fixed; right: 56px; bottom: 40px; text-align: right; font-size: 64px; line-height: 1; color: rgba(255,255,255,.08); font-weight: 700; }
+  .big small { display: block; font-size: 16px; font-weight: 400; color: #3b4741; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div id="log"></div>
+  <label class="prompt" data-ml-field><span>Password: </span><span class="stars"></span><span class="cursor">&nbsp;</span><input data-ml-password></label>
+  <div class="ml-status" data-ml-status></div>
+  <div class="big"><span data-ml-time></span><small data-ml-date="full"></small></div>
+<script>
+  const log = document.getElementById("log");
+  const stars = document.querySelector(".stars");
+  const env = MintLock.env;
+  function line(html) { const d = document.createElement("div"); d.innerHTML = html; log.appendChild(d); }
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+  const now = new Date();
+  line(`<span class="dim">Linux Mint · ${esc(env.host)} · tty7</span>`);
+  line(`<span class="dim">${esc(now.toString().slice(0, 24))}</span>`);
+  line("");
+  line(`Session locked for <span class="acc">${esc(env.realName)}</span>.`);
+  if (env.message) line(`<span class="dim">note:</span> ${esc(env.message)}`);
+  line("");
+  line(`<span class="acc">${esc(env.host)} login:</span> ${esc(env.user)}`);
+  MintLock.on("key", (k) => {
+    if (k.kind !== "submit") stars.textContent = "*".repeat(Math.min(k.length, 40));
+  });
+  MintLock.on("auth", (state, text) => {
+    if (state === "failed") {
+      line(`Password: ${stars.textContent || ""}`);
+      line(`<span class="err">${esc(text || "Login incorrect")}</span>`);
+      line("");
+      line(`<span class="acc">${esc(env.host)} login:</span> ${esc(env.user)}`);
+      stars.textContent = "";
+      while (log.children.length > 18) log.firstChild.remove();
+    } else if (state === "info" && text) {
+      line(`<span class="dim">${esc(text)}</span>`);
+    }
+  });
+  MintLock.on("unlock", () => { line(`<span class="acc">Welcome back.</span>`); });
+</script>
+</body>
+</html>

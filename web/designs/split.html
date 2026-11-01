@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Split</title>
+<script type="application/json" id="meta">
+{ "name": "Split", "description": "Your wallpaper sharp on the right, a tinted panel on the left with the day and your sign-in.",
+  "tags": ["wallpaper", "avatar", "panel"], "category": "Styling", "order": 4 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { display: grid; grid-template-columns: minmax(420px, 36%) 1fr; }
+  .photo { background: #111 var(--wallpaper) center / cover no-repeat; }
+  [data-no-wallpaper] .photo { background: linear-gradient(135deg, rgba(var(--accent-rgb), .5), #101211); }
+  .panel {
+    position: relative; display: flex; flex-direction: column; justify-content: space-between;
+    padding: 64px 56px 56px;
+    background: linear-gradient(170deg, rgba(var(--accent-rgb), .18), transparent 55%), #121413;
+    box-shadow: 20px 0 60px rgba(0,0,0,.45); z-index: 1;
+  }
+  .weekday { font-size: 18px; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .time { font-size: 104px; font-weight: 250; line-height: 1; margin-top: 18px; letter-spacing: -.02em; }
+  .date { font-size: 20px; color: var(--muted); margin-top: 10px; }
+  .message { margin-top: 26px; font-size: 15px; padding-left: 14px; border-left: 2px solid var(--accent); color: rgba(255,255,255,.8); }
+  .who { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .ml-avatar { width: 56px; height: 56px; font-size: 24px; }
+  .name { font-size: 18px; font-weight: 600; }
+  .sub { font-size: 13px; color: var(--muted); }
+  .ml-field { width: 100%; border-radius: 10px; background: rgba(255,255,255,.07); }
+  .ml-status { text-align: left; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <section class="panel">
+    <div>
+      <div class="weekday" data-ml-date="weekday"></div>
+      <div class="time" data-ml-time></div>
+      <div class="date" data-ml-date="full"></div>
+      <div class="message" data-ml-message></div>
+    </div>
+    <div>
+      <div class="who">
+        <div class="ml-avatar" data-ml-avatar></div>
+        <div><div class="name" data-ml-name></div><div class="sub">Locked · <span data-ml-host></span></div></div>
+      </div>
+      <label class="ml-field" data-ml-field><input data-ml-password><button class="ml-reveal" data-ml-reveal></button></label>
+      <div class="ml-status" data-ml-status></div>
+    </div>
+  </section>
+  <div class="photo"></div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Zen</title>
+<script type="application/json" id="meta">
+{ "name": "Zen", "description": "A small thin clock, a single line to type on, and a lot of quiet space.",
+  "tags": ["minimal", "calm", "no wallpaper"], "category": "Styling", "order": 2 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body {
+    background: radial-gradient(ellipse at 50% 120%, rgba(var(--accent-rgb), .22), transparent 60%),
+                linear-gradient(#141615, #0b0c0c);
+    display: grid; place-items: center;
+  }
+  main { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .time { font-size: 56px; font-weight: 200; letter-spacing: .18em; padding-left: .18em; }
+  .date { font-size: 13px; letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
+  .line { position: relative; margin-top: 56px; width: 240px; height: 30px; }
+  .line input { position: absolute; inset: 0; opacity: 0; }
+  .line::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: rgba(255,255,255,.25); transition: background .3s, transform .3s;
+  }
+  .line:focus-within::after { background: var(--accent); }
+  .dots { position: absolute; inset: 0 0 8px; display: flex; justify-content: center; align-items: center; gap: 9px; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--fg); animation: pop .25s ease; }
+  @keyframes pop { from { transform: scale(0); } }
+  .ph { position: absolute; inset: 0 0 8px; display: grid; place-items: center; font-size: 12px; letter-spacing: .3em; color: rgba(255,255,255,.3); text-transform: uppercase; }
+  .ml-has-text .ph { display: none; }
+  .ml-status { font-size: 12px; letter-spacing: .08em; }
+  .ml-busy .dots i { animation: breathe 1s ease-in-out infinite; }
+  .ml-busy .dots i:nth-child(2n) { animation-delay: .2s; }
+  @keyframes breathe { 50% { opacity: .2; } }
+</style>
+</head>
+<body>
+  <main>
+    <div class="time" data-ml-time></div>
+    <div class="date" data-ml-date="long"></div>
+    <label class="line" data-ml-field>
+      <input data-ml-password>
+      <div class="dots"></div>
+      <div class="ph">type to unlock</div>
+    </label>
+    <div class="ml-status" data-ml-status></div>
+  </main>
+<script>
+  const dots = document.querySelector(".dots");
+  MintLock.on("key", (k) => {
+    const n = Math.min(k.kind === "submit" ? dots.children.length : k.length, 24);
+    while (dots.children.length < n) dots.appendChild(document.createElement("i"));
+    while (dots.children.length > n) dots.lastChild.remove();
+  });
+</script>
+</body>
+</html>

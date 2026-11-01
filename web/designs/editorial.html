@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Editorial</title>
+<script type="application/json" id="meta">
+{ "name": "Editorial", "description": "Magazine-cover type: the weekday set huge in serif, the date as a folio, a quiet line to sign in.",
+  "tags": ["typography", "light", "serif"], "category": "Styling", "order": 5 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  :root { color-scheme: light; --ink: #191714; --paper: #f1ece2; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--serif); padding: 6vh 6vw; display: grid; grid-template-rows: auto 1fr auto; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 12px;
+    font-family: var(--font); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; }
+  header b { color: var(--accent); filter: brightness(.7) saturate(1.4); }
+  .hero { align-self: center; }
+  .weekday { font-size: clamp(80px, 15vw, 240px); line-height: .9; font-weight: 700; letter-spacing: -.03em; margin: 0; }
+  .sub { display: flex; gap: 40px; align-items: baseline; margin-top: 22px; font-size: 28px; font-style: italic; }
+  .time { font-family: var(--font); font-style: normal; font-weight: 300; font-size: 64px; }
+  .rule { flex: 1; height: 1px; background: var(--ink); opacity: .35; align-self: center; }
+  footer { display: flex; align-items: flex-end; gap: 28px; border-top: 1px solid rgba(25,23,20,.3); padding-top: 18px; font-family: var(--font); }
+  .byline { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; }
+  .byline span { display: block; font-size: 22px; letter-spacing: 0; text-transform: none; font-family: var(--serif); font-style: italic; margin-top: 4px; }
+  .ml-field { margin-left: auto; width: 320px; border-radius: 0; background: transparent; border: 0; border-bottom: 2px solid var(--ink); padding-left: 0; }
+  .ml-field:focus-within { box-shadow: none; border-color: var(--ink); }
+  .ml-field input { color: var(--ink); caret-color: var(--ink); font-size: 18px; }
+  .ml-field input::placeholder { color: rgba(25,23,20,.45); font-style: italic; font-family: var(--serif); }
+  .ml-reveal { color: rgba(25,23,20,.5); }
+  .ml-reveal:hover { background: rgba(0,0,0,.06); color: var(--ink); }
+  .ml-status { position: absolute; right: 6vw; bottom: 2.4vh; color: rgba(25,23,20,.6); }
+  .ml-status[data-kind="error"] { color: #b3261e; }
+  .message { font-size: 22px; font-style: italic; margin-top: 16px; max-width: 60ch; }
+</style>
+</head>
+<body>
+  <header><span>The <b>Daily</b> Lock</span><span data-ml-host></span><span data-ml-date="full"></span></header>
+  <section class="hero">
+    <h1 class="weekday" data-ml-date="weekday"></h1>
+    <div class="sub"><span class="time" data-ml-time></span><span class="rule"></span><span data-ml-greeting></span></div>
+    <div class="message" data-ml-message></div>
+  </section>
+  <footer>
+    <div class="byline">Locked by<span data-ml-name></span></div>
+    <label class="ml-field" data-ml-field><input data-ml-password placeholder="Password, please"><button class="ml-reveal" data-ml-reveal></button></label>
+  </footer>
+  <div class="ml-status" data-ml-status></div>
+</body>
+</html>

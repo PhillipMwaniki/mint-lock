@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Flip</title>
+<script type="application/json" id="meta">
+{ "name": "Flip", "description": "A split-flap clock whose cards fold over as the minutes change.",
+  "tags": ["animated", "clock", "retro"], "category": "Animation", "order": 22 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { display: grid; place-items: center; }
+  .ml-wallpaper { filter: blur(calc(var(--blur) * 1.6)); }
+  main { position: relative; display: flex; flex-direction: column; align-items: center; gap: 34px; }
+  .clock { display: flex; gap: 18px; perspective: 900px; }
+  .group { display: flex; gap: 8px; }
+  .card { position: relative; width: 112px; height: 160px; font: 600 128px/160px var(--font); text-align: center; color: #eee; }
+  .half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: #1c1d1f; }
+  .half span { display: block; height: 160px; }
+  .top { top: 0; border-radius: 12px 12px 0 0; background: #222326; }
+  .bottom { bottom: 0; border-radius: 0 0 12px 12px; }
+  .bottom span { transform: translateY(-50%); }
+  .card::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #0a0a0a; z-index: 5; }
+  .flap { position: absolute; left: 0; right: 0; top: 0; height: 50%; transform-origin: bottom; z-index: 4; backface-visibility: hidden; }
+  .flap.go { animation: fold .5s cubic-bezier(.5, 0, .7, 1) forwards; }
+  @keyframes fold { to { transform: rotateX(-90deg); } }
+  .flap2 { position: absolute; left: 0; right: 0; bottom: 0; height: 50%; transform-origin: top; z-index: 4; transform: rotateX(90deg); }
+  .flap2.go { animation: unfold .35s .5s cubic-bezier(.3, 0, .2, 1) forwards; }
+  @keyframes unfold { to { transform: rotateX(0); } }
+  .colon { font: 600 90px/160px var(--font); color: rgba(255,255,255,.5); }
+  .ampm { align-self: flex-end; font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+  .date { font-size: 18px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+  .ml-field { background: rgba(20,20,22,.7); }
+</style>
+</head>
+<body>
+  <div class="ml-wallpaper"></div>
+  <main>
+    <div class="clock">
+      <div class="group" id="hh"></div><div class="colon">:</div><div class="group" id="mm"></div>
+      <div class="ampm" id="ampm"></div>
+    </div>
+    <div class="date" data-ml-date="long"></div>
+    <label class="ml-field" data-ml-field><input data-ml-password><button class="ml-reveal" data-ml-reveal></button></label>
+    <div class="ml-status" data-ml-status></div>
+  </main>
+<script>
+  function makeCard() {
+    const c = document.createElement("div"); c.className = "card";
+    c.innerHTML = '<div class="half top"><span></span></div><div class="half bottom"><span></span></div>';
+    c.value = null; return c;
+  }
+  const slots = { hh: [makeCard(), makeCard()], mm: [makeCard(), makeCard()] };
+  for (const k in slots) slots[k].forEach((c) => document.getElementById(k).appendChild(c));
+
+  function setCard(card, v) {
+    if (card.value === v) return;
+    const old = card.value;
+    card.value = v;
+    const top = card.querySelector(".top span"), bottom = card.querySelector(".bottom span");
+    if (old === null || MintLock.env.reduceMotion) { top.textContent = bottom.textContent = v; return; }
+    // New digit underneath; the old top folds down, then the new bottom unfolds.
+    top.textContent = v;
+    const f1 = document.createElement("div"); f1.className = "half top flap"; f1.innerHTML = `<span>${old}</span>`;
+    const f2 = document.createElement("div"); f2.className = "half bottom flap2"; f2.innerHTML = `<span>${v}</span>`;
+    card.append(f1, f2);
+    requestAnimationFrame(() => { f1.classList.add("go"); f2.classList.add("go"); });
+    setTimeout(() => { bottom.textContent = v; f1.remove(); f2.remove(); }, 900);
+  }
+  function render() {
+    const t = MintLock.time();
+    const h = t.h.padStart(2, MintLock.env.clock24 ? "0" : " ");
+    setCard(slots.hh[0], h[0].trim()); setCard(slots.hh[1], h[1]);
+    setCard(slots.mm[0], t.m[0]); setCard(slots.mm[1], t.m[1]);
+    document.getElementById("ampm").textContent = t.ampm;
+  }
+  MintLock.on("ready", render);
+  MintLock.on("tick", render);
+</script>
+</body>
+</html>

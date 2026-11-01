@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pond</title>
+<script type="application/json" id="meta">
+{ "name": "Pond", "description": "Still water at night; every key drops a ripple, Enter sends one across the whole pond.",
+  "tags": ["animated", "typing", "calm"], "category": "Animation", "order": 24 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { background: #061014; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .ui { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .time { font-size: 84px; font-weight: 200; letter-spacing: .05em; }
+  .date { color: var(--muted); margin-bottom: 40px; }
+  .ml-field { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.12); }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="ui">
+    <div class="time" data-ml-time></div>
+    <div class="date" data-ml-date="long"></div>
+    <label class="ml-field" data-ml-field><input data-ml-password placeholder="Touch the water"><button class="ml-reveal" data-ml-reveal></button></label>
+    <div class="ml-status" data-ml-status></div>
+  </div>
+<script>
+  const [ar, ag, ab] = MintLock.rgb();
+  let rings = [];
+  const drop = (x, y, big = false, color = null) =>
+    rings.push({ x, y, r: 0, life: 1, speed: big ? 520 : 140 + Math.random() * 60, big, color });
+  for (let i = 0; i < 3; i++) setTimeout(() => drop(Math.random(), 0.5 + Math.random() * 0.4), i * 1600);
+  setInterval(() => { if (rings.length < 4) drop(Math.random(), 0.55 + Math.random() * 0.4); }, 4200);
+  MintLock.on("key", (k) => {
+    if (k.kind === "char") drop(0.15 + Math.random() * 0.7, 0.55 + Math.random() * 0.4);
+    if (k.kind === "submit") drop(0.5, 0.62, true);
+  });
+  MintLock.on("auth", (s) => { if (s === "failed") drop(0.5, 0.62, true, "255,110,100"); });
+  MintLock.on("unlock", () => { for (let i = 0; i < 5; i++) drop(Math.random(), Math.random(), true); });
+  MintLock.canvas("#c", (ctx, w, h, dt, t) => {
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#04090c"); sky.addColorStop(0.5, "#071319"); sky.addColorStop(1, "#0a1c22");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+    // moon reflection
+    const mx = w * 0.72, my = h * 0.2;
+    const moon = ctx.createRadialGradient(mx, my, 0, mx, my, 160);
+    moon.addColorStop(0, "rgba(230,240,235,.18)"); moon.addColorStop(1, "rgba(230,240,235,0)");
+    ctx.fillStyle = moon; ctx.fillRect(0, 0, w, h);
+    for (let y = h * 0.5; y < h; y += 6) {
+      const k = (y - h * 0.5) / (h * 0.5);
+      const wob = Math.sin(y * 0.08 + t * 1.3) * 18 * (0.3 + k);
+      ctx.fillStyle = `rgba(220,235,230,${0.06 * (1 - k)})`;
+      ctx.fillRect(mx - 40 - k * 50 + wob, y, 80 + k * 100, 2);
+    }
+    rings = rings.filter((r) => r.life > 0);
+    for (const r of rings) {
+      r.r += r.speed * dt; r.life -= dt * (r.big ? 0.45 : 0.32);
+      const col = r.color || `${ar},${ag},${ab}`;
+      for (let j = 0; j < 3; j++) {
+        const rr = r.r - j * 14; if (rr <= 0) continue;
+        ctx.strokeStyle = `rgba(${col},${Math.max(0, r.life) * (0.5 - j * 0.14)})`;
+        ctx.lineWidth = r.big ? 2 : 1.4;
+        ctx.beginPath(); ctx.ellipse(r.x * w, r.y * h, rr, rr * 0.32, 0, 0, 6.29); ctx.stroke();
+      }
+    }
+  });
+</script>
+</body>
+</html>

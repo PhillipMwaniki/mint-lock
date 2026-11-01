@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aurora</title>
+<script type="application/json" id="meta">
+{ "name": "Aurora", "description": "Slow ribbons of light in your accent colour drift behind a frosted card.",
+  "tags": ["animated", "gradient", "glass"], "category": "Animation", "order": 20 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { background: #05070a; display: grid; place-items: center; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .card {
+    position: relative; width: 380px; padding: 40px 36px 30px; border-radius: 28px; text-align: center;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(24px) saturate(140%);
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
+  }
+  .time { font-size: 76px; font-weight: 300; line-height: 1; }
+  .date { margin-top: 8px; color: var(--muted); }
+  .who { margin: 30px 0 14px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 500; }
+  .ml-avatar { width: 34px; height: 34px; font-size: 15px; }
+  .ml-field { width: 100%; }
+  .ml-status { margin-top: 10px; }
+</style>
+</head>
+<body>
+  <canvas id="sky"></canvas>
+  <div class="card">
+    <div class="time" data-ml-time></div>
+    <div class="date" data-ml-date="long"></div>
+    <div class="who"><div class="ml-avatar" data-ml-avatar></div><span data-ml-name></span></div>
+    <label class="ml-field" data-ml-field><input data-ml-password><button class="ml-reveal" data-ml-reveal></button></label>
+    <div class="ml-status" data-ml-status></div>
+  </div>
+<script>
+  const [r, g, b] = MintLock.rgb();
+  // A second hue, rotated from the accent, keeps the ribbons from looking flat.
+  function shift([r, g, b], deg) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), k = 1 / 3, q = Math.sqrt(k);
+    const m = [c + (1 - c) * k, k * (1 - c) - q * s, k * (1 - c) + q * s];
+    const ch = (x, y, z) => Math.max(0, Math.min(255, Math.round(x * m[0] + y * m[1] + z * m[2])));
+    return [ch(r, g, b), ch(b, r, g), ch(g, b, r)];
+  }
+  const cols = [[r, g, b], shift([r, g, b], 50), shift([r, g, b], -60)];
+  let energy = 0;
+  MintLock.on("key", () => { energy = Math.min(1, energy + 0.25); });
+  MintLock.on("auth", (s) => { if (s === "failed") energy = -1; });
+  MintLock.canvas("#sky", (ctx, w, h, dt, t) => {
+    energy += (0 - energy) * Math.min(1, dt * 1.5);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#05070a"; ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "lighter";
+    const speed = 1 + Math.max(0, energy) * 2;
+    for (let i = 0; i < 3; i++) {
+      const [cr, cg, cb] = cols[i];
+      const base = h * (0.3 + i * 0.17);
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 16) {
+        const y = base + Math.sin(x / (260 + i * 90) + t * 0.25 * speed + i * 2) * 70
+                       + Math.sin(x / 120 + t * 0.4 * speed + i) * 18 * (1 + Math.abs(energy));
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      const grad = ctx.createLinearGradient(0, base - 120, 0, base + 260);
+      const a = energy < 0 ? 0.18 : 0.32 + energy * 0.2;
+      grad.addColorStop(0, `rgba(${cr},${cg},${cb},0)`);
+      grad.addColorStop(0.25, `rgba(${energy < 0 ? 255 : cr},${energy < 0 ? 80 : cg},${energy < 0 ? 80 : cb},${a})`);
+      grad.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.fillStyle = grad; ctx.fill();
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Constellation</title>
+<script type="application/json" id="meta">
+{ "name": "Constellation", "description": "Each key you press lights a star and joins it to the last; a wrong password scatters them.",
+  "tags": ["animated", "typing", "space"], "category": "Animation", "order": 21 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { background: radial-gradient(ellipse at 50% 30%, #0f1622, #04060a 70%); }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .top { position: fixed; top: 9vh; left: 0; right: 0; text-align: center; }
+  .time { font-size: 92px; font-weight: 200; letter-spacing: .04em; }
+  .date { color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+  .bottom { position: fixed; bottom: 10vh; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .ml-field { background: rgba(255,255,255,.06); width: 280px; }
+  .name { font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="top"><div class="time" data-ml-time></div><div class="date" data-ml-date="long"></div></div>
+  <div class="bottom">
+    <div class="name" data-ml-name></div>
+    <label class="ml-field" data-ml-field><input data-ml-password placeholder="Type to draw"><button class="ml-reveal" data-ml-reveal></button></label>
+    <div class="ml-status" data-ml-status></div>
+  </div>
+<script>
+  const [ar, ag, ab] = MintLock.rgb();
+  const dust = Array.from({ length: 220 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), p: Math.random() * 6 }));
+  let stars = [];   // typed stars
+  let scatter = 0;
+  MintLock.on("key", (k) => {
+    if (k.kind === "char") {
+      const prev = stars[stars.length - 1];
+      let x = prev ? prev.tx + (Math.random() - 0.5) * 0.22 : 0.35 + Math.random() * 0.3;
+      let y = prev ? prev.ty + (Math.random() - 0.5) * 0.18 : 0.42 + Math.random() * 0.14;
+      x = Math.min(0.85, Math.max(0.15, x)); y = Math.min(0.66, Math.max(0.3, y));
+      stars.push({ tx: x, ty: y, x, y, vx: 0, vy: 0, born: performance.now() / 1000 });
+    } else if (k.kind === "backspace") stars.pop();
+    else if (k.kind === "clear" && scatter <= 0) stars = [];
+  });
+  MintLock.on("auth", (s) => {
+    if (s === "failed") {
+      scatter = 1.2;
+      stars.forEach((s) => { const a = Math.random() * 6.28; s.vx = Math.cos(a) * 0.6; s.vy = Math.sin(a) * 0.6; });
+    }
+  });
+  MintLock.on("unlock", () => { stars.forEach((s) => { s.vy = -1.5; }); scatter = 1; });
+  MintLock.canvas("#c", (ctx, w, h, dt, t) => {
+    ctx.clearRect(0, 0, w, h);
+    for (const d of dust) {
+      const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * (0.3 + d.z) + d.p));
+      ctx.fillStyle = `rgba(255,255,255,${0.12 + 0.5 * d.z * tw})`;
+      ctx.fillRect(d.x * w, d.y * h, 1 + d.z, 1 + d.z);
+    }
+    if (scatter > 0) {
+      scatter -= dt;
+      stars.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; });
+      if (scatter <= 0) stars = [];
+    }
+    const alpha = scatter > 0 ? Math.max(0, scatter) : 1;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.45 * alpha})`;
+    ctx.beginPath();
+    stars.forEach((s, i) => { i ? ctx.lineTo(s.x * w, s.y * h) : ctx.moveTo(s.x * w, s.y * h); });
+    ctx.stroke();
+    for (const s of stars) {
+      const age = t - s.born, r = 2.5 + Math.max(0, 6 - age * 20);
+      const g = ctx.createRadialGradient(s.x * w, s.y * h, 0, s.x * w, s.y * h, r * 5);
+      g.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      g.addColorStop(0.2, `rgba(${ar},${ag},${ab},${0.7 * alpha})`);
+      g.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x * w, s.y * h, r * 5, 0, 6.29); ctx.fill();
+    }
+  });
+</script>
+</body>
+</html>

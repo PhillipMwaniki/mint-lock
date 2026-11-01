@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Orbit</title>
+<script type="application/json" id="meta">
+{ "name": "Orbit", "description": "Hours, minutes and seconds as three rings closing around the password field.",
+  "tags": ["animated", "clock", "geometric"], "category": "Animation", "order": 25 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { background: radial-gradient(circle at 50% 50%, #161a19, #090a0a 70%); display: grid; place-items: center; }
+  .wrap { position: relative; width: min(78vh, 640px); aspect-ratio: 1; display: grid; place-items: center; }
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+  circle { fill: none; stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.3, .7, .2, 1); }
+  .track { stroke: rgba(255,255,255,.06); }
+  .h { stroke: var(--accent); stroke-width: 10; }
+  .m { stroke: rgba(var(--accent-rgb), .6); stroke-width: 6; }
+  .s { stroke: rgba(255,255,255,.55); stroke-width: 2; }
+  .center { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .time { font-size: 64px; font-weight: 250; }
+  .date { color: var(--muted); font-size: 14px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 22px; }
+  .ml-field { width: 250px; }
+  .wrap.fail svg { animation: spin .6s ease; }
+  @keyframes spin { 30% { transform: rotate(-110deg); } 60% { transform: rotate(-75deg); } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <svg viewBox="0 0 200 200">
+      <circle class="track" cx="100" cy="100" r="94" stroke-width="10"/>
+      <circle class="h" cx="100" cy="100" r="94"/>
+      <circle class="track" cx="100" cy="100" r="82" stroke-width="6"/>
+      <circle class="m" cx="100" cy="100" r="82"/>
+      <circle class="s" cx="100" cy="100" r="73"/>
+    </svg>
+    <div class="center">
+      <div class="time" data-ml-time></div>
+      <div class="date" data-ml-date="short"></div>
+      <label class="ml-field" data-ml-field><input data-ml-password><button class="ml-reveal" data-ml-reveal></button></label>
+      <div class="ml-status" data-ml-status></div>
+    </div>
+  </div>
+<script>
+  const rings = { h: 94, m: 82, s: 73 };
+  for (const k in rings) {
+    const c = document.querySelector("circle." + k), len = 2 * Math.PI * rings[k];
+    c.style.strokeDasharray = len; rings[k] = { c, len };
+  }
+  function set(k, frac) {
+    // Wrapping from full back to empty should not animate backwards across the dial.
+    const r = rings[k], off = r.len * (1 - frac);
+    if (frac < 0.02) { r.c.style.transition = "none"; r.c.style.strokeDashoffset = off; void r.c.offsetWidth; r.c.style.transition = ""; }
+    else r.c.style.strokeDashoffset = off;
+  }
+  MintLock.on("tick", (d) => {
+    set("h", ((d.getHours() % 12) + d.getMinutes() / 60) / 12);
+    set("m", (d.getMinutes() + d.getSeconds() / 60) / 60);
+    set("s", d.getSeconds() / 60);
+  });
+  MintLock.on("auth", (s) => {
+    const w = document.querySelector(".wrap");
+    if (s === "failed") { w.classList.remove("fail"); void w.offsetWidth; w.classList.add("fail"); }
+  });
+</script>
+</body>
+</html>
