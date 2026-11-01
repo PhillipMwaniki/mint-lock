@@ -15,8 +15,14 @@
   5. Only when the child reports "unlocked" and exits: stop the backup
      locker, unmap the shield and exit.
 
-SIGUSR1 ends the lock too; `mint-lock daemon` sends it when logind asks the
-session to unlock (`loginctl unlock-session`).
+Cinnamon's power daemon (csd-power) runs the lock command itself on idle and
+before suspend. Before suspend it passes XSS_SLEEP_LOCK_FD, a descriptor it
+waits on: closing it says "the screen is covered, go ahead and sleep". That is
+closed as soon as the UI reports ready (or right away if already locked).
+
+SIGUSR1 ends the lock without a password. Only the same user can send it, and
+that user could kill the session anyway; it is the way out from a text console
+if the lock screen is ever stuck: `pkill -USR1 -f "mint-lock lock"`.
 """
 
 import fcntl
@@ -39,6 +45,16 @@ CRASH_WINDOW = 60
 
 def log(*a):
     print("mint-lock[supervisor]:", *a, file=sys.stderr, flush=True)
+
+
+def release_sleep_fd():
+    """Tell csd-power the screen is locked so suspend can go ahead."""
+    fd = os.environ.pop("XSS_SLEEP_LOCK_FD", None)
+    if fd and fd.isdigit():
+        try:
+            os.close(int(fd))
+        except OSError:
+            pass
 
 
 class InstanceLock:
@@ -215,6 +231,7 @@ class Supervisor:
             line = line.strip()
             if line == b"ready":
                 self.ungrab()
+                release_sleep_fd()
             elif line == b"unlocked":
                 self.unlocked = True
 
@@ -280,5 +297,6 @@ def lock(design=None, debug=False):
     inst = InstanceLock()
     if not inst.acquire():
         log("already locked")
+        release_sleep_fd()
         return 0
     return Supervisor(design=design, debug=debug).run()

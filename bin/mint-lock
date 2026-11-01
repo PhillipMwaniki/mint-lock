@@ -92,11 +92,6 @@ def cmd_snapshot(a):
     return 0 if snapshot.snapshot(a.design, a.out, w, h, a.delay, a.query) else 1
 
 
-def cmd_daemon(_a):
-    from mintlock import daemon
-    return daemon.run()
-
-
 def cmd_enable(_a):
     from gi.repository import Gio
     s = Gio.Settings.new(GSCHEMA)
@@ -104,7 +99,7 @@ def cmd_enable(_a):
     s.set_string(GKEY, f"{exe} lock")
     Gio.Settings.sync()
     print(f"Cinnamon will now lock with: {exe} lock")
-    print("Idle and suspend locking need `mint-lock daemon` running (install.sh sets up autostart).")
+    print("Idle, suspend, Super+L and the menu's Lock Screen all use it.")
     return 0
 
 
@@ -168,7 +163,6 @@ def main():
     s.add_argument("--query", default="mode=thumb")
     s.set_defaults(fn=cmd_snapshot)
 
-    sub.add_parser("daemon", help="lock on idle and before suspend").set_defaults(fn=cmd_daemon)
     sub.add_parser("enable", help="make Cinnamon use mint-lock").set_defaults(fn=cmd_enable)
     sub.add_parser("disable", help="go back to Cinnamon's lock screen").set_defaults(fn=cmd_disable)
     sub.add_parser("status", help="show whether mint-lock is active").set_defaults(fn=cmd_status)
