@@ -1,0 +1,118 @@
+/* Shared base for mint-lock designs. Designs override freely. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --accent: #35a854;
+  --accent-rgb: 53, 168, 84;
+  --on-accent: #fff;
+  --fg: #f4f4f4;
+  --muted: rgba(255, 255, 255, 0.62);
+  --font: "Inter", "Ubuntu", "Noto Sans", "DejaVu Sans", sans-serif;
+  --mono: "JetBrainsMono Nerd Font", "JetBrains Mono", "FiraMono Nerd Font", "DejaVu Sans Mono", monospace;
+  --serif: "DejaVu Serif", "Noto Serif", Georgia, serif;
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: #000; color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none; cursor: default;
+}
+
+[hidden] { display: none !important; }
+
+/* Wallpaper layer: <div class="ml-wallpaper"></div> */
+.ml-wallpaper {
+  position: fixed; inset: calc(var(--blur) * -2);
+  background: #111 var(--wallpaper) center / cover no-repeat;
+  filter: blur(var(--blur));
+}
+.ml-wallpaper::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(0, 0, 0, var(--dim));
+}
+[data-no-wallpaper] .ml-wallpaper {
+  background: radial-gradient(circle at 30% 20%, rgba(var(--accent-rgb), 0.35), transparent 60%),
+              linear-gradient(160deg, #1b1f1d, #0c0d0d);
+}
+
+/* Avatar: <div class="ml-avatar" data-ml-avatar></div> */
+.ml-avatar {
+  width: 96px; height: 96px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 40px; font-weight: 600;
+}
+.ml-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Password field: <label class="ml-field" data-ml-field><input data-ml-password><button data-ml-reveal></button></label> */
+.ml-field {
+  display: flex; align-items: center; gap: 6px;
+  width: 300px; height: 44px; padding: 0 6px 0 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.ml-field:focus-within {
+  border-color: rgba(var(--accent-rgb), 0.9);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
+}
+.ml-field input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; outline: 0; background: transparent;
+  color: inherit; font: inherit; font-size: 15px; letter-spacing: 0.04em;
+  caret-color: var(--accent);
+}
+.ml-field input::placeholder { color: rgba(255, 255, 255, 0.5); letter-spacing: 0; }
+.ml-reveal {
+  flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%;
+  background: transparent; color: rgba(255, 255, 255, 0.55); cursor: pointer;
+  display: grid; place-items: center; padding: 0;
+}
+.ml-reveal:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.ml-reveal svg { width: 18px; height: 18px; }
+.ml-reveal[aria-pressed="true"] { color: var(--accent); }
+
+.ml-busy { opacity: 0.6; }
+.ml-busy input { cursor: progress; }
+
+@keyframes ml-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(3px); }
+}
+.ml-shake { animation: ml-shake 0.42s ease; }
+
+.ml-status {
+  min-height: 1.4em; font-size: 13px; color: var(--muted); text-align: center;
+}
+.ml-status[data-kind="error"] { color: #ff8a80; }
+
+.ml-battery {
+  position: fixed; top: 18px; right: 22px; z-index: 50;
+  padding: 6px 12px; border-radius: 14px;
+  background: rgba(200, 40, 40, 0.85); color: #fff; font: 600 13px var(--font);
+}
+
+/* Unlock outro, default: fade + slight zoom. Designs may replace it. */
+html.ml-unlocking body { transition: opacity 0.4s ease, transform 0.4s ease; opacity: 0; transform: scale(1.04); }
+html[data-reduce-motion].ml-unlocking body { transition: none; }
+
+/* Resting state after a while with no input */
+html.ml-asleep body > * { transition: opacity 1.5s ease; opacity: 0.12; }
+html.ml-asleep .ml-battery { opacity: 1; }
+
+html[data-reduce-motion] *, html[data-reduce-motion] *::before, html[data-reduce-motion] *::after {
+  animation-duration: 0.001s !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.001s !important;
+}
+
+/* Thumbnails in the explorer: no caret, no hover */
+html[data-mode="thumb"] { pointer-events: none; }
+html[data-mode="thumb"] input { caret-color: transparent; }

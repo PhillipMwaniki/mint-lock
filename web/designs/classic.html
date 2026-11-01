@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Classic</title>
+<script type="application/json" id="meta">
+{ "name": "Classic", "description": "Big clock over your blurred wallpaper, with your picture and the password underneath.",
+  "tags": ["wallpaper", "minimal", "avatar"], "category": "Styling", "order": 1 }
+</script>
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { display: grid; place-items: center; }
+  .stack { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .time { font-size: 128px; font-weight: 200; letter-spacing: -0.02em; line-height: 1; text-shadow: 0 2px 30px rgba(0,0,0,.35); }
+  .date { margin-top: 10px; font-size: 22px; font-weight: 400; color: rgba(255,255,255,.85); }
+  .message { margin-top: 8px; font-size: 15px; color: var(--muted); }
+  .user { margin-top: 64px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .ml-avatar { width: 84px; height: 84px; font-size: 34px; box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.25); }
+  .name { font-size: 17px; font-weight: 500; }
+  .ml-field { margin-top: 4px; backdrop-filter: blur(6px); }
+  .ml-status { margin-top: 6px; }
+  .hint { position: fixed; bottom: 22px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(255,255,255,.4); }
+</style>
+</head>
+<body>
+  <div class="ml-wallpaper"></div>
+  <main class="stack">
+    <div class="time" data-ml-time></div>
+    <div class="date" data-ml-date="long"></div>
+    <div class="message" data-ml-message></div>
+    <div class="user">
+      <div class="ml-avatar" data-ml-avatar></div>
+      <div class="name" data-ml-name></div>
+      <label class="ml-field" data-ml-field>
+        <input data-ml-password placeholder="Enter password">
+        <button class="ml-reveal" data-ml-reveal></button>
+      </label>
+      <div class="ml-status" data-ml-status></div>
+    </div>
+  </main>
+  <div class="hint">Ctrl+E shows the password · Esc clears</div>
+</body>
+</html>

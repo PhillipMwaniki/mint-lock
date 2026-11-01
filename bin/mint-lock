@@ -1,0 +1,178 @@
+#!/usr/bin/python3
+"""mint-lock: lock screens for Linux Mint Cinnamon."""
+
+import argparse
+import os
+import sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.dirname(HERE))
+
+from mintlock import config  # noqa: E402
+
+GSCHEMA = "org.cinnamon.desktop.screensaver"
+GKEY = "custom-screensaver-command"
+
+
+def cmd_lock(a):
+    from mintlock import locker
+    if a.timeout and not a.test:
+        print("--timeout only works with --test", file=sys.stderr)
+        return 2
+    return locker.lock(windowed=a.test, debug=a.debug, design=a.design, timeout=a.timeout)
+
+
+def cmd_list(_a):
+    cur = config.load()["design"]
+    for d in config.designs():
+        mark = "*" if d["id"] == cur else " "
+        src = "" if d["builtin"] else "  (yours)"
+        print(f"{mark} {d['id']:<14} {d['name']:<16} {d['description']}{src}")
+    return 0
+
+
+def cmd_set(a):
+    ids = {d["id"] for d in config.designs()}
+    if a.design not in ids:
+        print(f"no design called {a.design!r}; try `mint-lock list`", file=sys.stderr)
+        return 1
+    config.update(design=a.design)
+    print("lock screen design:", a.design)
+    return 0
+
+
+def cmd_config(a):
+    cfg = config.load()
+    if a.key is None:
+        for k, v in cfg.items():
+            print(f"{k} = {v!r}")
+        return 0
+    if a.key not in config.DEFAULTS:
+        print("unknown setting; known: " + ", ".join(config.DEFAULTS), file=sys.stderr)
+        return 1
+    if a.value is None:
+        print(cfg[a.key])
+        return 0
+    want = config.DEFAULTS[a.key]
+    try:
+        if isinstance(want, bool):
+            val = a.value.lower() in ("1", "true", "yes", "on")
+        elif isinstance(want, int):
+            val = int(a.value)
+        elif isinstance(want, float):
+            val = float(a.value)
+        elif isinstance(want, list):
+            val = [x for x in a.value.split(",") if x]
+        else:
+            val = a.value
+    except ValueError:
+        print("bad value for " + a.key, file=sys.stderr)
+        return 1
+    config.update(**{a.key: val})
+    return 0
+
+
+def cmd_explore(a):
+    from mintlock import explorer
+    return explorer.run(debug=a.debug)
+
+
+def cmd_preview(a):
+    from mintlock import explorer
+    return explorer.run_preview(a.design or config.load()["design"])
+
+
+def cmd_snapshot(a):
+    from mintlock import snapshot
+    w, h = (int(x) for x in a.size.split("x"))
+    return 0 if snapshot.snapshot(a.design, a.out, w, h, a.delay, a.query) else 1
+
+
+def cmd_daemon(_a):
+    from mintlock import daemon
+    return daemon.run()
+
+
+def cmd_enable(_a):
+    from gi.repository import Gio
+    s = Gio.Settings.new(GSCHEMA)
+    exe = os.path.realpath(__file__)
+    s.set_string(GKEY, f"{exe} lock")
+    Gio.Settings.sync()
+    print(f"Cinnamon will now lock with: {exe} lock")
+    print("Idle and suspend locking need `mint-lock daemon` running (install.sh sets up autostart).")
+    return 0
+
+
+def cmd_disable(_a):
+    from gi.repository import Gio
+    s = Gio.Settings.new(GSCHEMA)
+    s.reset(GKEY)
+    Gio.Settings.sync()
+    print("Back to Cinnamon's own lock screen.")
+    return 0
+
+
+def cmd_status(_a):
+    from gi.repository import Gio
+    from mintlock.locker import InstanceLock
+    cmd = Gio.Settings.new(GSCHEMA).get_string(GKEY)
+    print("hooked into Cinnamon:", "yes" if "mint-lock" in cmd else "no", f"({cmd!r})" if cmd else "")
+    print("locked now:", "yes" if InstanceLock.is_locked() else "no")
+    print("design:", config.load()["design"])
+    return 0
+
+
+def main():
+    p = argparse.ArgumentParser(prog="mint-lock", description=__doc__)
+    sub = p.add_subparsers(dest="cmd")
+
+    s = sub.add_parser("lock", help="lock the screen now")
+    s.add_argument("--design", help="use this design instead of the configured one")
+    s.add_argument("--test", action="store_true",
+                   help="in a normal window, no grabs; for trying designs safely")
+    s.add_argument("--timeout", type=int, default=0, help="with --test: unlock after N seconds")
+    s.add_argument("--debug", action="store_true", help="web inspector and console output")
+    s.set_defaults(fn=cmd_lock)
+
+    s = sub.add_parser("explore", help="open the design explorer")
+    s.add_argument("--debug", action="store_true")
+    s.set_defaults(fn=cmd_explore)
+
+    s = sub.add_parser("preview", help="full screen preview of a design (Esc closes, nothing is locked)")
+    s.add_argument("design", nargs="?")
+    s.set_defaults(fn=cmd_preview)
+
+    sub.add_parser("list", help="list designs").set_defaults(fn=cmd_list)
+
+    s = sub.add_parser("set", help="choose the lock screen design")
+    s.add_argument("design")
+    s.set_defaults(fn=cmd_set)
+
+    s = sub.add_parser("config", help="show or change a setting")
+    s.add_argument("key", nargs="?")
+    s.add_argument("value", nargs="?")
+    s.set_defaults(fn=cmd_config)
+
+    s = sub.add_parser("snapshot", help="render a design to a PNG")
+    s.add_argument("design")
+    s.add_argument("out")
+    s.add_argument("--size", default="1920x1080")
+    s.add_argument("--delay", type=int, default=1500, help="ms to wait before the shot")
+    s.add_argument("--query", default="mode=thumb")
+    s.set_defaults(fn=cmd_snapshot)
+
+    sub.add_parser("daemon", help="lock on idle and before suspend").set_defaults(fn=cmd_daemon)
+    sub.add_parser("enable", help="make Cinnamon use mint-lock").set_defaults(fn=cmd_enable)
+    sub.add_parser("disable", help="go back to Cinnamon's lock screen").set_defaults(fn=cmd_disable)
+    sub.add_parser("status", help="show whether mint-lock is active").set_defaults(fn=cmd_status)
+
+    a = p.parse_args()
+    if not getattr(a, "fn", None):
+        p.print_help()
+        return 0
+    return a.fn(a)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

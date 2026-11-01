@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Clock</title>
+<!-- Shown on every monitor except the primary one. Not listed in the explorer. -->
+<link rel="stylesheet" href="../lib/lock.css">
+<script src="../lib/lock.js"></script>
+<style>
+  body { display: grid; place-items: center; }
+  .stack { position: relative; text-align: center; }
+  .time { font-size: 96px; font-weight: 200; line-height: 1; }
+  .date { margin-top: 8px; font-size: 18px; color: rgba(255,255,255,.75); }
+</style>
+</head>
+<body>
+  <div class="ml-wallpaper"></div>
+  <div class="stack">
+    <div class="time" data-ml-time></div>
+    <div class="date" data-ml-date="long"></div>
+  </div>
+</body>
+</html>
