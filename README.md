@@ -51,7 +51,7 @@ The screenshots use a demo name and wallpaper. On your machine every design show
 ## Install
 
 ```sh
-git clone <this repo> mint-lock
+git clone https://github.com/PhillipMwaniki/mint-lock.git
 cd mint-lock
 ./install.sh
 ```
@@ -210,3 +210,7 @@ web/lib/                lock.js + lock.css, the runtime every design uses
 web/designs/            the designs
 web/explorer/           the explorer UI
 ```
+
+## License
+
+[MIT](LICENSE)
