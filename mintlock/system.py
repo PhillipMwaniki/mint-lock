@@ -144,4 +144,11 @@ def environment(cfg=None, preview=False):
         "battery": battery(),
         "preview": preview,
     })
+    if os.environ.get("MINTLOCK_DEMO"):
+        # Neutral identity for screenshots and demos.
+        demo_wall = os.path.join(config.ROOT, "docs", "demo-wallpaper.jpg")
+        env.update({"user": "alex", "realName": "Alex Rivera", "initial": "A", "avatar": "",
+                    "host": "mint", "wallpaper": _file_url(demo_wall), "message": "",
+                    "theme": {"accent": "#35a854", "bg": "#1e1e1e", "fg": "#f0f0f0", "dark": True},
+                    "accent": cfg["accent"] or "#35a854"})
     return env

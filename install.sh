@@ -32,6 +32,9 @@ cp -r "$SRC/bin" "$SRC/mintlock" "$SRC/web" "$DEST/"
 find "$DEST" -name __pycache__ -prune -exec rm -rf {} +
 chmod +x "$DEST/bin/mint-lock" "$DEST/mintlock/authhelper.py"
 ln -sfn "$DEST/bin/mint-lock" "$BIN_DIR/mint-lock"
+# Your own designs live in ../designs; this makes "../lib/lock.js" work there as in the built-in ones.
+mkdir -p "$DEST/../designs"
+ln -sfn "$DEST/web/lib" "$DEST/../lib"
 sed "s|@BIN@|$DEST/bin/mint-lock|" "$SRC/extras/mint-lock-explorer.desktop" > "$APPS/mint-lock-explorer.desktop"
 update-desktop-database "$APPS" >/dev/null 2>&1 || true
 

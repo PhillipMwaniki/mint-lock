@@ -10,6 +10,7 @@ if gsettings get org.cinnamon.desktop.screensaver custom-screensaver-command 2>/
   echo "Cinnamon is back on its own lock screen."
 fi
 rm -rf "$DATA/mint-lock/app"
+rm -f "$DATA/mint-lock/lib"
 rm -f "$HOME/.local/bin/mint-lock" "$DATA/applications/mint-lock-explorer.desktop"
 if [[ "${1:-}" == "--purge" ]]; then
   rm -rf "$DATA/mint-lock" "${XDG_CONFIG_HOME:-$HOME/.config}/mint-lock"
