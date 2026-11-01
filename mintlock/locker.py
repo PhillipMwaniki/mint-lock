@@ -3,15 +3,16 @@
 One override-redirect window per monitor. The primary monitor shows the chosen
 design and takes the keyboard and pointer grab; the others show a clock.
 
-Crash safety: once the primary window is up, Cinnamon's own cs-backup-locker is
-started watching it. If this process dies without unlocking, the backup locker
-takes over the screen, still locked. It is killed only after PAM says yes.
+This runs as a child of supervisor.py, which keeps a black shield and the
+grab whenever this process is not up, and restarts it if it dies. It reports
+"ready" once its windows cover the screen and "unlocked" after PAM says yes,
+on the file descriptor the supervisor passes in.
+
+--test runs it alone in an ordinary window with no grabs, for trying designs.
 """
 
-import fcntl
 import os
 import signal
-import subprocess
 import sys
 import time
 
@@ -24,7 +25,6 @@ from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 from . import config, system, webview  # noqa: E402
 from .auth import Authenticator  # noqa: E402
 
-BACKUP_LOCKER = "/usr/libexec/cinnamon-screensaver/cs-backup-locker"
 CLOCK_PAGE = os.path.join(config.DESIGNS_DIR, "_clock.html")
 SLEEP_AFTER = 45          # seconds without input before the design rests
 OUTRO_MAX_MS = 900        # longest an unlock animation may hold the screen
@@ -32,40 +32,6 @@ OUTRO_MAX_MS = 900        # longest an unlock animation may hold the screen
 
 def log(*args):
     print("mint-lock:", *args, file=sys.stderr, flush=True)
-
-
-class InstanceLock:
-    """Only one lock screen at a time: a second `mint-lock lock` is a no-op."""
-
-    def __init__(self):
-        os.makedirs(config.RUNTIME_DIR, mode=0o700, exist_ok=True)
-        self.path = os.path.join(config.RUNTIME_DIR, "locked")
-        self.fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
-
-    def acquire(self):
-        try:
-            fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return False
-        os.ftruncate(self.fd, 0)
-        os.write(self.fd, str(os.getpid()).encode())
-        return True
-
-    @staticmethod
-    def is_locked():
-        path = os.path.join(config.RUNTIME_DIR, "locked")
-        try:
-            fd = os.open(path, os.O_RDWR)
-        except OSError:
-            return False
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            fcntl.flock(fd, fcntl.LOCK_UN)
-            return False
-        except BlockingIOError:
-            return True
-        finally:
-            os.close(fd)
 
 
 class MonitorWindow(Gtk.Window):
@@ -160,15 +126,17 @@ class MonitorWindow(Gtk.Window):
 
 
 class Locker:
-    def __init__(self, windowed=False, debug=False, design=None, timeout=0):
+    def __init__(self, windowed=False, debug=False, design=None, timeout=0,
+                 report_fd=None, safe=False):
         self.windowed = windowed
+        self.report_fd = report_fd
+        self.safe = safe
         self.debug = debug
         self.timeout = timeout
         self.cfg = config.load()
         self.design_path = config.design_path(design or self.cfg["design"])
         self.env = system.environment(self.cfg)
         self.windows = []
-        self.backup_pid = 0
         self.grabbed = False
         self._grab_id = 0
         self.unlocking = False
@@ -191,9 +159,19 @@ class Locker:
         for m in monitors:
             win = MonitorWindow(self, m, m == primary, self.windowed)
             win.show_all()
+            if self.safe and win.primary:
+                win.use_native_fallback()
             self.windows.append(win)
         self.primary_window().focus_input()
         self.schedule_grab()
+
+    def report(self, line):
+        if self.report_fd is None:
+            return
+        try:
+            os.write(self.report_fd, (line + "\n").encode())
+        except OSError:
+            pass
 
     def primary_window(self):
         for w in self.windows:
@@ -204,12 +182,7 @@ class Locker:
     def on_monitors_changed(self, *_a):
         if self.unlocking:
             return
-        old_backup = self.backup_pid
         self.build_windows()
-        if old_backup:
-            # The backup locker watches a window by id; point a new one at the new window.
-            self.kill_backup()
-            GLib.idle_add(self.spawn_backup)
 
     # -- grabs --------------------------------------------------------------
 
@@ -236,35 +209,6 @@ class Locker:
         # Someone else (an open menu, a drag) holds the grab; keep trying. The
         # windows are already covering the screen in the meantime.
         return True
-
-    # -- backup locker -------------------------------------------------------
-
-    def spawn_backup(self):
-        if self.windowed or self.backup_pid or not os.path.exists(BACKUP_LOCKER):
-            return False
-        gdkwin = self.primary_window().get_window()
-        if gdkwin is None:
-            return True
-        xid = gdkwin.get_xid()
-        session_tty = os.environ.get("XDG_VTNR", "7")
-        term_tty = "2" if session_tty != "2" else "1"
-        try:
-            self.backup_pid = subprocess.Popen(
-                [BACKUP_LOCKER, "--xid", str(xid), "--term", term_tty, "--session", session_tty],
-                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL).pid
-        except OSError as e:
-            log("could not start backup locker:", e)
-        return False
-
-    def kill_backup(self):
-        if self.backup_pid:
-            try:
-                os.kill(self.backup_pid, signal.SIGTERM)
-                os.waitpid(self.backup_pid, 0)
-            except (ProcessLookupError, ChildProcessError):
-                pass
-            self.backup_pid = 0
 
     # -- auth ---------------------------------------------------------------
 
@@ -332,7 +276,8 @@ class Locker:
                                  lambda *a: (Gtk.main_quit() if self.windowed else None) or True)
 
         self.build_windows()
-        GLib.timeout_add(300, self.spawn_backup)
+        # Let the windows map before telling the supervisor to hand over the grab.
+        GLib.timeout_add(150, lambda: self.report("ready") or False)
         GLib.timeout_add_seconds(5, self.tick)
         GLib.timeout_add_seconds(60, self.refresh_env)
         if self.timeout:
@@ -354,7 +299,7 @@ class Locker:
         if not self.unlocking:
             return False
         self.unlocking = None  # finish only once
-        self.kill_backup()
+        self.report("unlocked")
         Gdk.Display.get_default().get_default_seat().ungrab()
         for w in self.windows:
             w.destroy()
@@ -362,9 +307,6 @@ class Locker:
         return False
 
 
-def lock(windowed=False, debug=False, design=None, timeout=0):
-    inst = InstanceLock()
-    if not inst.acquire():
-        log("already locked")
-        return 0
-    return Locker(windowed=windowed, debug=debug, design=design, timeout=timeout).run()
+def run(windowed=False, debug=False, design=None, timeout=0, report_fd=None, safe=False):
+    return Locker(windowed=windowed, debug=debug, design=design, timeout=timeout,
+                  report_fd=report_fd, safe=safe).run()

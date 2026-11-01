@@ -15,11 +15,15 @@ GKEY = "custom-screensaver-command"
 
 
 def cmd_lock(a):
-    from mintlock import locker
     if a.timeout and not a.test:
         print("--timeout only works with --test", file=sys.stderr)
         return 2
-    return locker.lock(windowed=a.test, debug=a.debug, design=a.design, timeout=a.timeout)
+    if a.test or a.child is not None:
+        from mintlock import locker
+        return locker.run(windowed=a.test, debug=a.debug, design=a.design,
+                          timeout=a.timeout, report_fd=a.child, safe=a.safe)
+    from mintlock import supervisor
+    return supervisor.lock(design=a.design, debug=a.debug)
 
 
 def cmd_list(_a):
@@ -115,10 +119,10 @@ def cmd_disable(_a):
 
 def cmd_status(_a):
     from gi.repository import Gio
-    from mintlock.locker import InstanceLock
+    from mintlock.supervisor import InstanceLock
     cmd = Gio.Settings.new(GSCHEMA).get_string(GKEY)
     print("hooked into Cinnamon:", "yes" if "mint-lock" in cmd else "no", f"({cmd!r})" if cmd else "")
-    print("locked now:", "yes" if InstanceLock.is_locked() else "no")
+    print("locked now:", "yes" if InstanceLock.holder() else "no")
     print("design:", config.load()["design"])
     return 0
 
@@ -133,6 +137,8 @@ def main():
                    help="in a normal window, no grabs; for trying designs safely")
     s.add_argument("--timeout", type=int, default=0, help="with --test: unlock after N seconds")
     s.add_argument("--debug", action="store_true", help="web inspector and console output")
+    s.add_argument("--child", type=int, help=argparse.SUPPRESS)   # set by the supervisor
+    s.add_argument("--safe", action="store_true", help=argparse.SUPPRESS)
     s.set_defaults(fn=cmd_lock)
 
     s = sub.add_parser("explore", help="open the design explorer")
